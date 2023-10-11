@@ -21,7 +21,7 @@ WORKDIR /app
 # ========= CONFIG =========
 # - derper args
 ENV DERP_HOST=127.0.0.1 \
-    DERP_ADDR=:443
+    DERP_ADDR=:443 \
     DERP_CERTS=/app/certs/ \
     DERP_STUN=true \
     DERP_STUN_PORT=3478 \
@@ -42,6 +42,8 @@ RUN apk update \
 # start derper
 CMD /app/derper --hostname=$DERP_HOST \
     --certmode=manual \
-    --certdir=$DERP_CERTS \
+    --a=$DERP_CERTS \
     --stun=$DERP_STUN  \
+    --stun-port=$DERP_STUN_PORT \
+    --http-port=$DERP_HTTP_PORT \
     --verify-clients=$DERP_VERIFY_CLIENTS
