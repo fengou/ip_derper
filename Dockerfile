@@ -3,7 +3,7 @@ WORKDIR /app
 
 # ========= CONFIG =========
 # - download links
-ENV MODIFIED_DERPER_GIT=https://github.com/veritas501/tailscale.git
+ENV MODIFIED_DERPER_GIT=https://github.com/fengou/tailscale.git
 # ==========================
 
 # install necessary packages && compile derper
