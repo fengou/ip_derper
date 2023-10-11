@@ -42,7 +42,8 @@ RUN apk update \
 # start derper
 CMD /app/derper --hostname=$DERP_HOST \
     --certmode=manual \
-    --a=$DERP_CERTS \
+    --certdir=$DERP_CERTS \
+    --a=$DERP_ADDR \
     --stun=$DERP_STUN  \
     --stun-port=$DERP_STUN_PORT \
     --http-port=$DERP_HTTP_PORT \
