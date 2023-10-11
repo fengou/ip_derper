@@ -21,6 +21,7 @@ WORKDIR /app
 # ========= CONFIG =========
 # - derper args
 ENV DERP_HOST=127.0.0.1 \
+    DERP_ADDR :443
     DERP_CERTS=/app/certs/ \
     DERP_STUN=true \
     DERP_VERIFY_CLIENTS=false
