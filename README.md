@@ -1,6 +1,6 @@
 # ip-derper
 
-####1. build
+#### 1. build
 
 ```
 root@ubuntu20a:~$ cd ip_derper/
@@ -10,13 +10,13 @@ root@ubuntu20a:~/ip_derper$ docker build -t fengou/ip_derper:latest .
 
 ```
 
-####2. run
+#### 2. run
 
 ```
 docker run -d --restart=always --name derper -p 3478:3478/udp -p 9443:443/tcp fengou/ip_derper
 ```
 
-####3. modify tailscale ACLs
+#### 3. modify tailscale ACLs
 
 inserts this into tailscale ACLs: https://login.tailscale.com/admin/acls
 ```json
