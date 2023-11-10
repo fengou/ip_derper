@@ -1,0 +1,119 @@
+1、安装Go
+apt install -y wget git openssl curl
+wget https://golang.google.cn/dl/go1.21.0.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go && sudo  tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
+
+将go的路径添加到环境变量
+export PATH=$PATH:/usr/local/go/bin
+
+检查go是否安装成功
+go version
+
+将添加环境变量输出到profile文件内，这样每次开机可以自动添加环境变量
+echo "export PATH=$PATH:/usr/local/go/bin" >> /etc/profile
+source /etc/profile
+
+以下命令都要在管理员账户下运行，先进入管理员账户
+su -
+
+增加go安装的国内镜像，加快go install的安装速度（国内必要）
+go env -w GO111MODULE=on
+go env -w GOPROXY=https://goproxy.cn,direct
+
+2、安装derper
+下载derper
+go install tailscale.com/cmd/derper@main
+
+进入~/go/pkg/mod/[tailscale]/cmd/derper文件夹内，执行go编译
+go build -o /etc/derp/derper
+
+编译完成后要修改cert.go文件，注释以下三行代码。
+cert.go文件位于~/go/pkg/mod/[tailscale]/cmd/derper
+
+func (m *manualCertManager) getCertificate(hi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	// if hi.ServerName != m.hostname {
+	//	return nil, fmt.Errorf("cert mismatch with hostname: %q", hi.ServerName)
+	// }
+	
+然后再次进入derper文件夹内编译一次
+go build -o /etc/derp/derper
+
+检查derper是否安装成功，成功的话会有derper文件夹
+ls /etc/derp
+
+3、配置derper服务器
+生成ssl证书，其中CN=derp.yourdomain.com中的域名替换成您自己的
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout /etc/derp/derp.yourdomain.com.key -out /etc/derp/derp.yourdomain.com.crt -subj "/CN=derp.yourdomain.com" -addext "subjectAltName=DNS:derp.yourdomain.com"
+
+生成derper的配置文件
+sudo vi /etc/systemd/system/derp.service
+
+将以下内容写入到derp.service文件中
+[Unit]
+
+Description=TS Derper
+
+After=network.target
+
+Wants=network.target
+
+[Service]
+
+User=root
+
+Restart=always
+
+ExecStart=/etc/derp/derper -hostname derp.yourdomain.com -a :443 -http-port 80 -certmode manual -certdir /etc/derp --verify-clients
+
+RestartPreventExitStatus=1
+
+[Install]
+
+WantedBy=multi-user.target
+
+需要注意的是：-a指定的端口必要要在防火墙中开放（TCP）（默认12345），同时要开放默认的3478（UDP）端口;--verified-clients是为了增加验证环节，只有服务器上登陆的tailscale账号可以使用此derper节点
+
+启动derper
+systemctl enable derp
+systemctl start derp
+
+检验是否设置成功
+在启动derp后可以在浏览器中进入https://IP:PORT，如果看到以下网页则说明成功。其中IP是第一步中记录的服务器公网IP，PORT是derp.service中设置的，默认为12345
+
+4、在服务器上安装taiscale
+运行自动安装脚本
+curl -fsSL https://tailscale.com/install.sh | sh
+
+启动tailscale并登陆
+tailscale up
+
+进入登陆网页登陆tailscale账号
+
+重启derp服务
+systemctl daemon-reload
+systemctl restart derp
+
+在tailscale网页后台管理中添加自定义derper服务器
+打开tailscale的网页console，在access control里的'ssh'之前粘贴以下内容：
+"derpMap": {
+		//"OmitDefaultRegions": true,
+		"Regions": {
+			"900": {
+				"RegionID":   900,
+				"RegionCode": "test",
+				"RegionName": "Test Derper",
+				"Nodes": [
+					{
+						"Name":             "900a",
+						"RegionID":         900,
+						"DERPPort":         12345, //更换为自己的PORT
+						"IPv4":             "192.168.1.1", //这里更换为自己的PI
+						"InsecureForTests": true,
+					},
+				],
+			},
+			"901":  null,
+			"902":  null,
+			"903":  null,
+		},
+	},
